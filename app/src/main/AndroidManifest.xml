@@ -33,6 +33,7 @@
             android:enabled="true">
 
         </service>
+        <service android:name=".PlayingService" android:enabled="true"></service>
 
         <receiver android:name=".RestartServiceReceiver">
             <intent-filter>
