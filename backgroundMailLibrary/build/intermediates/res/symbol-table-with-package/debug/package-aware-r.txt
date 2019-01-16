@@ -1,0 +1,11 @@
+com.kristijandraca.backgroundmaillibrary
+drawable ic_launcher
+string app_name
+string loading
+string message_send
+string no_email_recipient
+string no_gmail_password
+string no_gmail_username
+string no_internet
+style AppBaseTheme
+style AppTheme
