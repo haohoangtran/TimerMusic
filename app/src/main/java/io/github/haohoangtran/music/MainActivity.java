@@ -3,9 +3,11 @@ package io.github.haohoangtran.music;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -19,15 +21,18 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.github.haohoangtran.music.adapters.DetailAdapter;
 import io.github.haohoangtran.music.adapters.SongAdapter;
 import io.github.haohoangtran.music.databases.Database;
 import io.github.haohoangtran.music.eventbus.ReloadData;
+import io.github.haohoangtran.music.sharepref.SharedPrefs;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -44,11 +49,16 @@ public class MainActivity extends AppCompatActivity
     SongAdapter songAdapter;
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        EventBus.getDefault().register(this);
         Database.getInstance().setAudio();
         songAdapter = new SongAdapter();
         recyclerView.setAdapter(songAdapter);
@@ -74,10 +84,10 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        if(MusicService.mPlayer!=null&&MusicService.mPlayer.isPlaying()){
+        if (MusicService.mPlayer != null && MusicService.mPlayer.isPlaying()) {
             ibPause.setVisibility(View.VISIBLE);
             ibPlay.setVisibility(View.GONE);
-        }else {
+        } else {
             ibPause.setVisibility(View.GONE);
             ibPlay.setVisibility(View.VISIBLE);
         }
@@ -92,8 +102,8 @@ public class MainActivity extends AppCompatActivity
         ibPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(MusicService.mPlayer!=null&&MusicService.mPlayer.getCurrentPosition()>0)
-                MusicService.resume();
+                if (MusicService.mPlayer != null && MusicService.mPlayer.getCurrentPosition() > 0)
+                    MusicService.resume();
                 ibPause.setVisibility(View.VISIBLE);
                 ibPlay.setVisibility(View.GONE);
             }
@@ -109,19 +119,12 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void run() {
-
-
                 songAdapter.notifyDataSetChanged();
-
+                Toast.makeText(MainActivity.this, "Dữ liệu được cập nhật", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        EventBus.getDefault().unregister(this);
-    }
 
     public void showNotification() {
         new MyNotification(this);
@@ -130,7 +133,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-
+        EventBus.getDefault().register(this);
     }
 
 
@@ -171,21 +174,17 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+        if (id == R.id.nav_Detail) {
+            Intent intent = new Intent(this, DetailActivity.class);
+            startActivity(intent);
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        } else if (id == R.id.nav_logout) {
+            SharedPrefs.getInstance().clearAll();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
         }
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;

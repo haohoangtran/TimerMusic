@@ -27,6 +27,10 @@ public class SharedPrefs {
     public void putPassword(String pass) {
         sharedPreferences.edit().putString(PASS_KEY, pass).apply();
     }
+
+    public void clearAll() {
+        sharedPreferences.edit().clear().apply();
+    }
     public String getEmail(){
         return this.sharedPreferences.getString(USER_KEY, "");
     }

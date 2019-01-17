@@ -12,6 +12,7 @@ import io.github.haohoangtran.music.model.Schedule;
 public class Database {
     private static Database instance;
     private ArrayList<File> audio;
+    private ArrayList<String> scheduleDetails;
     private File playing;
 
     public ArrayList<File> getAudio() {
@@ -24,6 +25,20 @@ public class Database {
 
     private Database() {
         audio = new ArrayList<>();
+        scheduleDetails = new ArrayList<>();
+    }
+
+    public ArrayList<String> getScheduleDetails() {
+        return scheduleDetails;
+    }
+
+
+    public void addToDetail(String text) {
+        if (scheduleDetails.size() > 10) {
+            scheduleDetails.remove(0);
+        }
+        scheduleDetails.add(text);
+
     }
 
     public File getPlaying() {

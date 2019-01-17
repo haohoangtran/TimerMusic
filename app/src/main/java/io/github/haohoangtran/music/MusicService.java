@@ -3,13 +3,17 @@ package io.github.haohoangtran.music;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.Looper;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
@@ -63,6 +67,7 @@ import javax.mail.search.SearchTerm;
 import io.github.haohoangtran.music.databases.Database;
 import io.github.haohoangtran.music.eventbus.PlayFileEvent;
 import io.github.haohoangtran.music.eventbus.ReloadData;
+import io.github.haohoangtran.music.eventbus.ScheduleTimeChange;
 import io.github.haohoangtran.music.mail.MailPending;
 import io.github.haohoangtran.music.model.Schedule;
 import io.github.haohoangtran.music.sharepref.SharedPrefs;
@@ -106,8 +111,7 @@ public class MusicService extends Service {
         return super.onUnbind(intent);
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    private void setSchedules() {
         try {
             schedules = new ArrayList<>();
             File csv = getScheduleCSV(new File(App.APP_DIR));
@@ -124,18 +128,23 @@ public class MusicService extends Service {
                         }
                     }
                 }
-                setMusicPlay(null);
             }
-            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
-// This schedule a runnable task every 2 minutes
-            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
-                public void run() {
-                    getMail();
-                }
-            }, 0, 2, TimeUnit.MINUTES);
-        } catch (IOException e) {
-            Log.e(TAG, "onStartCommand: " + e.toString());
+        } catch (Exception e) {
+            Log.e(TAG, "setSchedules: " + e.toString());
         }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        setMusicPlay(null);
+        ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+// This schedule a runnable task every 2 minutes
+        scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                getMail();
+            }
+        }, 0, 2, TimeUnit.MINUTES);
+
         return START_STICKY;
     }
 
@@ -207,7 +216,39 @@ public class MusicService extends Service {
         }
     }
 
+    public void startSetTimeSchedule(Schedule schedule) {
+        long futurestart = schedule.getNextTimeStart();
+        countDownTimers.add(new CountDownTimer(futurestart, 1000) {
+            public void onTick(long millisUntilFinished) {
+                Database.getInstance().addToDetail(
+                        "Schedule " + schedule.getAudio() + " sẽ bắt đầu sau " + (millisUntilFinished / 1000) + "s "
+                                + (schedule.getNextStart().toString()));
+            }
+
+            public void onFinish() {
+                playingFile(schedule.getFile());
+                stopSetTimeSchedule(schedule);
+            }
+        }.start());
+    }
+
+    public void stopSetTimeSchedule(Schedule schedule) {
+        long futurestop = schedule.getNextTimeStop();
+        CountDownTimer c = new CountDownTimer(futurestop, 1000) {
+            public void onTick(long millisUntilFinished) {
+                Database.getInstance().addToDetail("Schedule " + schedule.getAudio() + " sẽ kết thúc sau " + millisUntilFinished / 1000 + "s "
+                        + (schedule.getNextStop()).toString());
+            }
+
+            public void onFinish() {
+                stopPlayingFile(schedule.getFile());
+                startSetTimeSchedule(schedule);
+            }
+        }.start();
+    }
+
     private void setMusicPlay(Message message) {
+        setSchedules();
         Log.e(TAG, "setMusicPlay: " + (new Date()).toString());
         messageLog.append(" bắt đầu set schedule ").append((new Date()).toString()).append('\n');
         if (countDownTimers == null) {
@@ -231,53 +272,18 @@ public class MusicService extends Service {
             }
             schedule.setPath(file.getAbsolutePath());
             schedule.setFile(file);
-            long futurestart = 0, futurestop = 0;
             if (schedule.isScheduleTime()) {
-                futurestop = schedule.getNextTimeStop();
                 playingFile(file);
-                CountDownTimer c = new CountDownTimer(futurestop, 1000) {
-
-                    public void onTick(long millisUntilFinished) {
-                        Log.e(TAG, "kết thúc " + file.getName() + millisUntilFinished / 1000);
-                    }
-
-                    public void onFinish() {
-                        stopPlayingFile(file);
-                    }
-
-                }.start();
-                countDownTimers.add(c);
+                stopSetTimeSchedule(schedule);
             } else {
-                futurestart = schedule.getNextTimeStart();
-                futurestop = schedule.getNextTimeStop();
-                countDownTimers.add(new CountDownTimer(futurestart, 1000) {
-
-                    public void onTick(long millisUntilFinished) {
-                        Log.e(TAG, "bắt đầu " + file.getName() + millisUntilFinished / 1000);
-                    }
-
-                    public void onFinish() {
-                        playingFile(file);
-                    }
-
-                }.start());
-                countDownTimers.add(new CountDownTimer(futurestop, 1000) {
-                    public void onTick(long millisUntilFinished) {
-                        Log.e(TAG, "kết thúc " + file.getName() + millisUntilFinished / 1000);
-                    }
-
-                    public void onFinish() {
-                        stopPlayingFile(file);
-                    }
-
-                }.start());
+                startSetTimeSchedule(schedule);
             }
         }
         try {
             if (message != null) {
-                messageLog.append(schedules.toString());
+                messageLog.append(schedules.toString()).append("\n");
                 String from = ((InternetAddress) message.getFrom()[0]).getAddress();
-                messageLog.append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
+                messageLog.append("Đời máy: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
                 sendMail(from, messageLog.toString());
             }
         } catch (Exception e) {
@@ -325,12 +331,9 @@ public class MusicService extends Service {
     }
 
     private void sendMail(String to, String body) {
-        stopSelf();
-
         try {
             final String username = SharedPrefs.getInstance().getEmail();
             final String password = SharedPrefs.getInstance().getPass();
-
             Properties props = new Properties();
             props.put("mail.smtp.auth", "true");
             props.put("mail.smtp.starttls.enable", "true");
@@ -371,6 +374,9 @@ public class MusicService extends Service {
         Message message = null;
         String mail = SharedPrefs.getInstance().getEmail();
         String pass = SharedPrefs.getInstance().getPass();
+        if (mail == null || mail.isEmpty()) {
+            return;
+        }
         Flags.Flag flag = null;
         messageLog = new StringBuilder();
         Log.e(TAG, "getMail: Bắt đầu " + mail + pass + " " + (new Date()).toString());
@@ -417,6 +423,7 @@ public class MusicService extends Service {
                 message = messages[messages.length - 1];
                 Date sent = message.getSentDate();
                 if (sent.getTime() > lastTime) {
+                    //TODO:send notification
                     Multipart multipart = (Multipart) message.getContent();
                     for (int i = 0; i < multipart.getCount(); i++) {
                         BodyPart bodyPart = multipart.getBodyPart(i);
@@ -425,6 +432,7 @@ public class MusicService extends Service {
                                         || !bodyPart.getFileName().contains(".zip"))) {
                             continue; // dealing with attachments only
                         }
+                        showNotification("Music ", "Nhận được mail schedule mới, đang cập nhật!");
                         String path = App.APP_DIR;
                         FileUtils.deleteDirectory(new File(path));
                         Log.e(TAG, "getMail: Lấy xong đang lưu zip" + (new Date()).toString());
@@ -498,6 +506,27 @@ public class MusicService extends Service {
             }
 
         }
+    }
+
+    void showNotification(String title, String content) {
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("default",
+                    "YOUR_CHANNEL_NAME",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("YOUR_NOTIFICATION_CHANNEL_DISCRIPTION");
+            mNotificationManager.createNotificationChannel(channel);
+        }
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(getApplicationContext(), "default")
+                .setSmallIcon(R.mipmap.ic_launcher) // notification icon
+                .setContentTitle(title) // title for notification
+                .setContentText(content)// message for notification
+                .setAutoCancel(true); // clear notification after click
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mBuilder.setContentIntent(pi);
+        mNotificationManager.notify(0, mBuilder.build());
     }
 
     private boolean unpackZip(File targetFile, String unzipFolder) {

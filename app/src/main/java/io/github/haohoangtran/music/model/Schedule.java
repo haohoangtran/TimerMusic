@@ -13,6 +13,7 @@ public class Schedule {
     private String end;
     private String audio;
     private String path;
+    private Date nextStart, nextStop;
 
     @NonNull
     @Override
@@ -87,12 +88,13 @@ public class Schedule {
                 c.set(Calendar.MINUTE, Integer.parseInt(arr[1]));
                 c.set(Calendar.SECOND, Integer.parseInt(arr[2]));
                 dt = c.getTime();
-                long diff=(dt.getTime() - (new Date()).getTime());
+                long diff = (dt.getTime() - (new Date()).getTime());
                 if (diff < 0) {
                     c.add(Calendar.DATE, 1);
                     dt = c.getTime();
                     diff = dt.getTime() - (new Date()).getTime();
                 }
+                this.nextStart = dt;
                 return diff;
             } else {
                 return -1;
@@ -130,6 +132,14 @@ public class Schedule {
         return false;
     }
 
+    public Date getNextStart() {
+        return nextStart;
+    }
+
+    public Date getNextStop() {
+        return nextStop;
+    }
+
     public long getNextTimeStop() {
         //tra ve mili s lan bat dau gan nhat
         // time format HH:mm:ss
@@ -149,10 +159,13 @@ public class Schedule {
                     dt = c.getTime();
                     diff = dt.getTime() - (new Date()).getTime();
                 }
+                this.nextStop = dt;
                 return diff;
+
             } else {
                 return -1;
             }
+
         } catch (Exception e) {
             Log.e("loi", "getNextTimeStart: " + e.toString());
         }
