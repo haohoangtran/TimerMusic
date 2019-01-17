@@ -89,7 +89,7 @@ public class Schedule {
                 if (diff < 0) {
                     c.add(Calendar.DATE, 1);
                     dt = c.getTime();
-                    diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                    diff = dt.getTime() - (new Date()).getTime();
                 }
                 return diff;
             } else {
@@ -141,11 +141,11 @@ public class Schedule {
                 c.set(Calendar.MINUTE, Integer.parseInt(arr[1]));
                 c.set(Calendar.SECOND, Integer.parseInt(arr[2]));
                 dt = c.getTime();
-                long diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                long diff = dt.getTime() - (new Date()).getTime();
                 if (diff < 0) {
                     c.add(Calendar.DATE, 1);
                     dt = c.getTime();
-                    diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                    diff = dt.getTime() - (new Date()).getTime();
                 }
                 return diff;
             } else {

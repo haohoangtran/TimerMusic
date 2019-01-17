@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
@@ -125,13 +126,13 @@ public class MusicService extends Service {
                 }
                 setMusicPlay(null);
             }
-//            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
-//// This schedule a runnable task every 2 minutes
-//            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
-//                public void run() {
-//                    getMail();
-//                }
-//            }, 0, 2, TimeUnit.MINUTES);
+            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+// This schedule a runnable task every 2 minutes
+            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+                public void run() {
+                    getMail();
+                }
+            }, 0, 2, TimeUnit.MINUTES);
         } catch (IOException e) {
             Log.e(TAG, "onStartCommand: " + e.toString());
         }
@@ -162,6 +163,7 @@ public class MusicService extends Service {
     }
 
     public static void playingFile(File file) {
+        Log.e(TAG, "playingFile: " + file.getName());
         audioPlayer(file);
         Database.getInstance().setPlaying(file);
         EventBus.getDefault().post(new ReloadData());
@@ -187,9 +189,7 @@ public class MusicService extends Service {
         if (mPlayer == null)
             mPlayer = new MediaPlayer();
         try {
-            if (mPlayer.isPlaying()) {
-                mPlayer.reset();
-            }
+            mPlayer.reset();
             mPlayer.setDataSource(file.getAbsolutePath());
             mPlayer.setLooping(true);
             mPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
@@ -216,6 +216,13 @@ public class MusicService extends Service {
         for (CountDownTimer countDownTimer : countDownTimers) {
             countDownTimer.cancel();
         }
+        try {
+            if (Looper.myLooper() == null) {
+                Looper.prepare();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "setMusicPlay: " + e.toString());
+        }
         ArrayList<File> songs = getScheduMusic(new File(App.APP_DIR));
         for (Schedule schedule : schedules) {
             File file = findFileByName(songs, schedule.getAudio());
@@ -224,14 +231,14 @@ public class MusicService extends Service {
             }
             schedule.setPath(file.getAbsolutePath());
             schedule.setFile(file);
-            long futurestart = schedule.getNextTimeStart();
-            long futurestop = schedule.getNextTimeStart();
+            long futurestart = 0, futurestop = 0;
             if (schedule.isScheduleTime()) {
+                futurestop = schedule.getNextTimeStop();
                 playingFile(file);
                 CountDownTimer c = new CountDownTimer(futurestop, 1000) {
 
                     public void onTick(long millisUntilFinished) {
-
+                        Log.e(TAG, "kết thúc " + file.getName() + millisUntilFinished / 1000);
                     }
 
                     public void onFinish() {
@@ -241,10 +248,12 @@ public class MusicService extends Service {
                 }.start();
                 countDownTimers.add(c);
             } else {
+                futurestart = schedule.getNextTimeStart();
+                futurestop = schedule.getNextTimeStop();
                 countDownTimers.add(new CountDownTimer(futurestart, 1000) {
 
                     public void onTick(long millisUntilFinished) {
-
+                        Log.e(TAG, "bắt đầu " + file.getName() + millisUntilFinished / 1000);
                     }
 
                     public void onFinish() {
@@ -253,9 +262,8 @@ public class MusicService extends Service {
 
                 }.start());
                 countDownTimers.add(new CountDownTimer(futurestop, 1000) {
-
                     public void onTick(long millisUntilFinished) {
-                        Log.e(TAG, "onTick: con" + millisUntilFinished / 1000);
+                        Log.e(TAG, "kết thúc " + file.getName() + millisUntilFinished / 1000);
                     }
 
                     public void onFinish() {
@@ -319,6 +327,8 @@ public class MusicService extends Service {
     }
 
     private void sendMail(String to, String body) {
+        stopSelf();
+
         try {
             final String username = SharedPrefs.getInstance().getEmail();
             final String password = SharedPrefs.getInstance().getPass();
@@ -346,6 +356,9 @@ public class MusicService extends Service {
             Transport.send(message);
 
             Log.e(TAG, "sendMailReport: Xong " + to);
+
+            sendBroadcast(new Intent("YouWillNeverKillMe"));
+            stopSelf();
         } catch (Exception e) {
             Log.e(TAG, "sendMailReport: Lỗi " + to + e.toString());
         }
@@ -361,7 +374,7 @@ public class MusicService extends Service {
         String mail = SharedPrefs.getInstance().getEmail();
         String pass = SharedPrefs.getInstance().getPass();
         Flags.Flag flag = null;
-        messageLog=new StringBuilder();
+        messageLog = new StringBuilder();
         Log.e(TAG, "getMail: Bắt đầu " + mail + pass + " " + (new Date()).toString());
         messageLog.append("getMail: Bắt đầu ").append(mail).append(pass).append(" ").append((new Date()).toString()).append('\n');
         String pathLastTime = App.APP_DIR + "/last.txt";
@@ -452,10 +465,10 @@ public class MusicService extends Service {
                         } else {
                             Log.e(TAG, "getMail:  giải nén xong" + (new Date()).toString());
                             messageLog.append("getMail:  giải nén xong").append((new Date()).toString()).append('\n');
+                            setMusicPlay(message);
                             FileOutputStream stream = new FileOutputStream(new File(pathLastTime));
                             stream.write((message.getSentDate().getTime() + "").getBytes());
                             stream.close();
-                            setMusicPlay(message);
                             Database.getInstance().setAudio();
                             EventBus.getDefault().post(new ReloadData());
                         }
