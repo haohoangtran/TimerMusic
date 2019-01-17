@@ -275,9 +275,7 @@ public class MusicService extends Service {
         }
         try {
             if (message != null) {
-                for (Schedule schedule : schedules) {
-                    messageLog.append(schedule.toString());
-                }
+                messageLog.append(schedules.toString());
                 String from = ((InternetAddress) message.getFrom()[0]).getAddress();
                 messageLog.append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
                 sendMail(from, messageLog.toString());

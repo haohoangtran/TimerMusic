@@ -1,5 +1,6 @@
 package io.github.haohoangtran.music.model;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.io.File;
@@ -13,6 +14,7 @@ public class Schedule {
     private String audio;
     private String path;
 
+    @NonNull
     @Override
     public String toString() {
         return "Schedule{" +
