@@ -125,13 +125,13 @@ public class MusicService extends Service {
                 }
                 setMusicPlay(null);
             }
-//            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
 //// This schedule a runnable task every 2 minutes
-//            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
-//                public void run() {
-//                    getMail();
-//                }
-//            }, 0, 2, TimeUnit.MINUTES);
+            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+              public void run() {
+                    getMail();
+                }
+            }, 0, 2, TimeUnit.MINUTES);
         } catch (IOException e) {
             Log.e(TAG, "onStartCommand: " + e.toString());
         }
