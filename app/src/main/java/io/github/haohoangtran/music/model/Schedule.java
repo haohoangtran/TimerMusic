@@ -1,6 +1,9 @@
 package io.github.haohoangtran.music.model;
 
+import android.util.Log;
+
 import java.io.File;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +33,7 @@ public class Schedule {
     }
 
     private File file;
+
     public String getPath() {
         return path;
     }
@@ -74,36 +78,82 @@ public class Schedule {
         try {
             String[] arr = this.start.split(":");
             if (arr.length == 3) {
-                Date date = new Date();
-                date.setHours(Integer.parseInt(arr[0]));
-                date.setMinutes(Integer.parseInt(arr[1]));
-                date.setSeconds(Integer.parseInt(arr[2]));
-                return ((date.getTime() - (new Date()).getTime())
-                        / (1000 * 60 * 60 * 24));
+                Date dt = new Date();
+                Calendar c = Calendar.getInstance();
+                c.setTime(dt);
+                c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(arr[0]));
+                c.set(Calendar.MINUTE, Integer.parseInt(arr[1]));
+                c.set(Calendar.SECOND, Integer.parseInt(arr[2]));
+                dt = c.getTime();
+                long diff=(dt.getTime() - (new Date()).getTime());
+                if (diff < 0) {
+                    c.add(Calendar.DATE, 1);
+                    dt = c.getTime();
+                    diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                }
+                return diff;
             } else {
                 return -1;
             }
         } catch (Exception e) {
-            return -1;
+            Log.e("loi", "getNextTimeStart: " + e.toString());
         }
+        return -1;
+    }
+
+    public boolean isScheduleTime() {
+        try {
+            String[] arrStart = this.start.split(":");
+            String[] arrStop = this.end.split(":");
+            if (arrStart.length == 3 && arrStop.length == 3) {
+                Date startTime = new Date();
+                Calendar c = Calendar.getInstance();
+                c.setTime(startTime);
+                c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(arrStart[0]));
+                c.set(Calendar.MINUTE, Integer.parseInt(arrStart[1]));
+                c.set(Calendar.SECOND, Integer.parseInt(arrStart[2]));
+                startTime = c.getTime();
+                Date stopTime = new Date();
+                c.setTime(stopTime);
+                c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(arrStop[0]));
+                c.set(Calendar.MINUTE, Integer.parseInt(arrStop[1]));
+                c.set(Calendar.SECOND, Integer.parseInt(arrStop[2]));
+                stopTime = c.getTime();
+                Date now = new Date();
+                return (startTime.getTime() - now.getTime() < 0 && stopTime.getTime() - now.getTime() > 0);
+            }
+        } catch (Exception ex) {
+
+        }
+        return false;
     }
 
     public long getNextTimeStop() {
+        //tra ve mili s lan bat dau gan nhat
         // time format HH:mm:ss
         try {
-            String[] arr = this.start.split(":");
+            String[] arr = this.end.split(":");
             if (arr.length == 3) {
-                Date date = new Date();
-                date.setHours(Integer.parseInt(arr[0]));
-                date.setMinutes(Integer.parseInt(arr[1]));
-                date.setSeconds(Integer.parseInt(arr[2]));
-                return ((date.getTime() - (new Date()).getTime())
-                        / (1000 * 60 * 60 * 24));
+                Date dt = new Date();
+                Calendar c = Calendar.getInstance();
+                c.setTime(dt);
+                c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(arr[0]));
+                c.set(Calendar.MINUTE, Integer.parseInt(arr[1]));
+                c.set(Calendar.SECOND, Integer.parseInt(arr[2]));
+                dt = c.getTime();
+                long diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                if (diff < 0) {
+                    c.add(Calendar.DATE, 1);
+                    dt = c.getTime();
+                    diff = ((dt.getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
+                }
+                return diff;
             } else {
                 return -1;
             }
         } catch (Exception e) {
-            return -1;
+            Log.e("loi", "getNextTimeStart: " + e.toString());
         }
+        return -1;
     }
 }

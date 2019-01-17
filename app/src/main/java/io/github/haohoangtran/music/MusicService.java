@@ -22,6 +22,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -73,9 +74,7 @@ public class MusicService extends Service {
     private ArrayList<Schedule> schedules;
     private ArrayList<CountDownTimer> countDownTimers;
     public static MediaPlayer mPlayer;
-    private Intent intent;
-    private String messageLog = "";
-    private ArrayList<MailPending> mailPendings;
+    private StringBuilder messageLog;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -86,7 +85,7 @@ public class MusicService extends Service {
     public void onCreate() {
         super.onCreate();
         mPlayer = new MediaPlayer();
-        mailPendings = new ArrayList<>();
+        messageLog = new StringBuilder();
     }
 
     public void onMessageEvent(PlayFileEvent event) {
@@ -109,7 +108,6 @@ public class MusicService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            this.intent = intent;
             schedules = new ArrayList<>();
             File csv = getScheduleCSV(new File(App.APP_DIR));
             if (csv != null) {
@@ -127,13 +125,13 @@ public class MusicService extends Service {
                 }
                 setMusicPlay(null);
             }
-            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
-// This schedule a runnable task every 2 minutes
-            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
-                public void run() {
-                    getMail();
-                }
-            }, 0, 2, TimeUnit.MINUTES);
+//            ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+//// This schedule a runnable task every 2 minutes
+//            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+//                public void run() {
+//                    getMail();
+//                }
+//            }, 0, 2, TimeUnit.MINUTES);
         } catch (IOException e) {
             Log.e(TAG, "onStartCommand: " + e.toString());
         }
@@ -211,7 +209,7 @@ public class MusicService extends Service {
 
     private void setMusicPlay(Message message) {
         Log.e(TAG, "setMusicPlay: " + (new Date()).toString());
-        messageLog += " bắt đầu set schedule " + (new Date()).toString() + '\n';
+        messageLog.append(" bắt đầu set schedule ").append((new Date()).toString()).append('\n');
         if (countDownTimers == null) {
             countDownTimers = new ArrayList<>();
         }
@@ -228,12 +226,9 @@ public class MusicService extends Service {
             schedule.setFile(file);
             long futurestart = schedule.getNextTimeStart();
             long futurestop = schedule.getNextTimeStart();
-            if (futurestart < -1 && futurestop < -1) {
-                //boqua
-            } else if (futurestart < -1 && futurestop > -1) {
-                //bat dau
+            if (schedule.isScheduleTime()) {
                 playingFile(file);
-                countDownTimers.add(new CountDownTimer(futurestop, 1000) {
+                CountDownTimer c = new CountDownTimer(futurestop, 1000) {
 
                     public void onTick(long millisUntilFinished) {
 
@@ -243,7 +238,8 @@ public class MusicService extends Service {
                         stopPlayingFile(file);
                     }
 
-                }.start());
+                }.start();
+                countDownTimers.add(c);
             } else {
                 countDownTimers.add(new CountDownTimer(futurestart, 1000) {
 
@@ -253,14 +249,13 @@ public class MusicService extends Service {
 
                     public void onFinish() {
                         playingFile(file);
-
                     }
 
                 }.start());
                 countDownTimers.add(new CountDownTimer(futurestop, 1000) {
 
                     public void onTick(long millisUntilFinished) {
-
+                        Log.e(TAG, "onTick: con" + millisUntilFinished / 1000);
                     }
 
                     public void onFinish() {
@@ -272,13 +267,12 @@ public class MusicService extends Service {
         }
         try {
             if (message != null) {
-                StringBuilder body = new StringBuilder();
                 for (Schedule schedule : schedules) {
-                    body.append(schedule.toString());
+                    messageLog.append(schedule.toString());
                 }
-                String from = message.getFrom()[0].toString();
-                from = from.substring(from.indexOf('<') + 1, from.indexOf('>'));
-                sendMail(from, messageLog + "\n" + body.toString());
+                String from = ((InternetAddress) message.getFrom()[0]).getAddress();
+                messageLog.append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
+                sendMail(from, messageLog.toString());
             }
         } catch (Exception e) {
             Log.e(TAG, "setMusicPlay: " + e);
@@ -334,7 +328,6 @@ public class MusicService extends Service {
             props.put("mail.smtp.starttls.enable", "true");
             props.put("mail.smtp.host", "smtp.gmail.com");
             props.put("mail.smtp.port", "587");
-
             Session session = Session.getInstance(props,
                     new javax.mail.Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
@@ -364,13 +357,13 @@ public class MusicService extends Service {
         long lastTime = 0;
         IMAPFolder folder = null;
         Store store = null;
-        Message message=null;
+        Message message = null;
         String mail = SharedPrefs.getInstance().getEmail();
         String pass = SharedPrefs.getInstance().getPass();
         Flags.Flag flag = null;
-        messageLog = "";
+        messageLog=new StringBuilder();
         Log.e(TAG, "getMail: Bắt đầu " + mail + pass + " " + (new Date()).toString());
-        messageLog += "getMail: Bắt đầu " + mail + pass + " " + (new Date()).toString() + '\n';
+        messageLog.append("getMail: Bắt đầu ").append(mail).append(pass).append(" ").append((new Date()).toString()).append('\n');
         String pathLastTime = App.APP_DIR + "/last.txt";
         try {
             File old = new File(pathLastTime);
@@ -380,7 +373,7 @@ public class MusicService extends Service {
             }
             Log.e(TAG, "getMail: thời gian cũ  " + (new Date(lastTime)).toString());
 
-            messageLog += "getMail: thời gian cũ  " + (new Date(lastTime)).toString() + '\n';
+            messageLog.append("getMail: thời gian cũ  ").append((new Date(lastTime)).toString()).append('\n');
             Properties props = System.getProperties();
             props.setProperty("mail.store.protocol", "imaps");
 
@@ -408,7 +401,7 @@ public class MusicService extends Service {
                 folder.open(Folder.READ_WRITE);
             javax.mail.Message[] messages = folder.search(search);
             Log.e(TAG, "getMail: Search xong " + (new Date()).toString());
-            messageLog += "getMail: Search xong " + (new Date()).toString() + '\n';
+            messageLog.append("getMail: Search xong ").append((new Date()).toString()).append('\n');
             if (messages.length > 0) {
                 message = messages[messages.length - 1];
                 Date sent = message.getSentDate();
@@ -424,8 +417,9 @@ public class MusicService extends Service {
                         String path = App.APP_DIR;
                         FileUtils.deleteDirectory(new File(path));
                         Log.e(TAG, "getMail: Lấy xong đang lưu zip" + (new Date()).toString());
-                        messageLog += "getMail: Lấy xong đang lưu zip" + (new Date()).toString() + '\n';
+                        messageLog.append("getMail: Lấy xong đang lưu zip").append((new Date()).toString()).append('\n');
                         InputStream is = bodyPart.getInputStream();
+                        BufferedInputStream bufferedInputStream = new BufferedInputStream(is);
                         Log.e(TAG, "getMail: " + path);
                         File dir = new File(path);
                         if (!dir.exists())
@@ -435,13 +429,17 @@ public class MusicService extends Service {
                         }
                         File f = new File(path, bodyPart.getFileName());
                         FileOutputStream fos = new FileOutputStream(f);
+                        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fos);
                         byte[] buf = new byte[4096];
                         int bytesRead;
-                        while ((bytesRead = is.read(buf)) != -1) {
-                            fos.write(buf, 0, bytesRead);
+                        while ((bytesRead = bufferedInputStream.read(buf)) != -1) {
+                            bufferedOutputStream.write(buf, 0, bytesRead);
                         }
+                        bufferedOutputStream.flush();
+                        bufferedOutputStream.close();
+                        bufferedInputStream.close();
                         Log.e(TAG, "getMail:  lưu xong file bắt đầu giải nén" + (new Date()).toString());
-                        messageLog += "getMail:  lưu xong file bắt đầu giải nén" + (new Date()).toString() + '\n';
+                        messageLog.append("getMail:  lưu xong file bắt đầu giải nén").append((new Date()).toString()).append('\n');
                         File dirContent = new File(path, "content");
                         if (dirContent.exists()) {
                             FileUtils.deleteDirectory(dirContent);
@@ -453,7 +451,7 @@ public class MusicService extends Service {
                             Log.e(TAG, "getMail:  giải nén lỗi" + (new Date()).toString());
                         } else {
                             Log.e(TAG, "getMail:  giải nén xong" + (new Date()).toString());
-                            messageLog += "getMail:  giải nén xong" + (new Date()).toString() + '\n';
+                            messageLog.append("getMail:  giải nén xong").append((new Date()).toString()).append('\n');
                             FileOutputStream stream = new FileOutputStream(new File(pathLastTime));
                             stream.write((message.getSentDate().getTime() + "").getBytes());
                             stream.close();
@@ -467,14 +465,13 @@ public class MusicService extends Service {
             Log.e(TAG, "getMail:  Xong toàn bộ" + (new Date()).toString());
         } catch (Exception e) {
             Log.e(TAG, "getMail: " + e.toString());
-            messageLog+=e.toString();
-            if(message!=null){
-                try{
-                    String from = message.getFrom()[0].toString();
-                    from = from.substring(from.indexOf('<') + 1, from.indexOf('>'));
-                    sendMail(from, messageLog);
-                }catch (Exception ex){
-                    Log.e(TAG, "getMail: "+e.toString());
+            messageLog.append(e.toString());
+            if (message != null) {
+                try {
+                    String from = ((InternetAddress) message.getFrom()[0]).getAddress();
+                    sendMail(from, messageLog.toString());
+                } catch (Exception ex) {
+                    Log.e(TAG, "getMail: " + e.toString());
                 }
             }
         } finally {
