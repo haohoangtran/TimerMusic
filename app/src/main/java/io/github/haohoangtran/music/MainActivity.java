@@ -20,7 +20,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
@@ -35,7 +39,7 @@ import io.github.haohoangtran.music.eventbus.ReloadData;
 import io.github.haohoangtran.music.sharepref.SharedPrefs;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, CompoundButton.OnCheckedChangeListener {
     @BindView(R.id.rv_Music)
     RecyclerView recyclerView;
     @BindView(R.id.ibBack)
@@ -46,6 +50,13 @@ public class MainActivity extends AppCompatActivity
     ImageButton ibPause;
     @BindView(R.id.ibPlay)
     ImageButton ibPlay;
+    @BindView(R.id.swAuto)
+    Switch swAuto;
+    @BindView(R.id.lnAuto)
+    LinearLayout lnAuto;
+    @BindView(R.id.lnManual)
+    LinearLayout lnManual;
+
     SongAdapter songAdapter;
 
     @Override
@@ -59,6 +70,9 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        boolean isAuto = SharedPrefs.getInstance().isAuto();
+        setSwitAuto(isAuto);
+        swAuto.setChecked(isAuto);
         Database.getInstance().setAudio();
         songAdapter = new SongAdapter();
         recyclerView.setAdapter(songAdapter);
@@ -67,14 +81,6 @@ public class MainActivity extends AppCompatActivity
         recyclerView.setLayoutManager(layoutManager);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -83,7 +89,13 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        View view = navigationView.getHeaderView(0);
+
+        ((TextView) view.findViewById(R.id.tv_NameHeader)).setText(SharedPrefs.getInstance().getUsername());
+
+        ((TextView) view.findViewById(R.id.tv_mailHeader)).setText(SharedPrefs.getInstance().getEmail());
         navigationView.setNavigationItemSelectedListener(this);
+        swAuto.setOnCheckedChangeListener(this);
         if (MusicService.mPlayer != null && MusicService.mPlayer.isPlaying()) {
             ibPause.setVisibility(View.VISIBLE);
             ibPlay.setVisibility(View.GONE);
@@ -188,5 +200,23 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        setSwitAuto(isChecked);
+    }
+
+    public void setSwitAuto(boolean isChecked) {
+        SharedPrefs.getInstance().putAuto(isChecked);
+        if (isChecked) {
+            swAuto.setText("Tự động");
+            lnManual.setVisibility(View.GONE);
+        } else {
+            swAuto.setText("Tắt");
+            lnManual.setVisibility(View.VISIBLE);
+        }
+        Intent intent = new Intent(this, MusicService.class);
+        stopService(intent);
     }
 }

@@ -75,7 +75,7 @@ import io.github.haohoangtran.music.utils.Compressor;
 
 @SuppressLint("Registered")
 public class MusicService extends Service {
-    private static final String SUBJECT = "fwdandpop";
+    private static final String SUBJECT = "schedule";
     private static String TAG = MusicService.class.toString();
     private ArrayList<Schedule> schedules;
     private ArrayList<CountDownTimer> countDownTimers;
@@ -102,7 +102,10 @@ public class MusicService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        for (CountDownTimer countDownTimer : countDownTimers) {
+            countDownTimer.cancel();
+        }
+        Database.getInstance().clearScheduleDetail();
         sendBroadcast(new Intent("YouWillNeverKillMe"));
     }
 
@@ -136,6 +139,7 @@ public class MusicService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
         setMusicPlay(null);
         ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
 // This schedule a runnable task every 2 minutes
@@ -249,42 +253,47 @@ public class MusicService extends Service {
 
     private void setMusicPlay(Message message) {
         setSchedules();
-        Log.e(TAG, "setMusicPlay: " + (new Date()).toString());
-        messageLog.append(" bắt đầu set schedule ").append((new Date()).toString()).append('\n');
+        boolean isAuto = SharedPrefs.getInstance().isAuto();
+        Log.e(TAG, "setMusicPlay: " + (new Date()).toString() + " " + isAuto);
+        messageLog.append(" bắt đầu set schedule ").append((new Date()).toString()).append('\n').append(" trạng thái hiện tại ").append(isAuto ? "Tự động" : "Tắt");
         if (countDownTimers == null) {
             countDownTimers = new ArrayList<>();
         }
         for (CountDownTimer countDownTimer : countDownTimers) {
             countDownTimer.cancel();
         }
-        try {
-            if (Looper.myLooper() == null) {
-                Looper.prepare();
+        if (isAuto) {
+
+            try {
+                if (Looper.myLooper() == null) {
+                    Looper.prepare();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "setMusicPlay: " + e.toString());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "setMusicPlay: " + e.toString());
-        }
-        ArrayList<File> songs = getScheduMusic(new File(App.APP_DIR));
-        for (Schedule schedule : schedules) {
-            File file = findFileByName(songs, schedule.getAudio());
-            if (file == null) {
-                continue;
-            }
-            schedule.setPath(file.getAbsolutePath());
-            schedule.setFile(file);
-            if (schedule.isScheduleTime()) {
-                playingFile(file);
-                stopSetTimeSchedule(schedule);
-            } else {
-                startSetTimeSchedule(schedule);
+            ArrayList<File> songs = getScheduMusic(new File(App.APP_DIR));
+            for (Schedule schedule : schedules) {
+                File file = findFileByName(songs, schedule.getAudio());
+                if (file == null) {
+                    continue;
+                }
+                schedule.setPath(file.getAbsolutePath());
+                schedule.setFile(file);
+                if (schedule.isScheduleTime()) {
+                    playingFile(file);
+                    stopSetTimeSchedule(schedule);
+                } else {
+                    startSetTimeSchedule(schedule);
+                }
             }
         }
         try {
             if (message != null) {
                 messageLog.append(schedules.toString()).append("\n");
                 String from = ((InternetAddress) message.getFrom()[0]).getAddress();
-                messageLog.append("Đời máy: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
-                sendMail(from, messageLog.toString());
+                messageLog.append("Đời máy: ").append(android.os.Build.MODEL).append(", Android:").append(android.os.Build.VERSION.RELEASE).append("\n");
+
+                sendMail(from, SharedPrefs.getInstance().getUsername() + '\n' + schedules.toString());
             }
         } catch (Exception e) {
             Log.e(TAG, "setMusicPlay: " + e);
@@ -345,13 +354,11 @@ public class MusicService extends Service {
                             return new PasswordAuthentication(username, password);
                         }
                     });
-
-
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(username));
             message.setRecipients(Message.RecipientType.TO,
                     InternetAddress.parse(to));
-            message.setSubject("Setup xong " + (new Date()).toString());
+            message.setSubject(SharedPrefs.getInstance().getUsername() + " thay tiếng thành công");
             message.setText(body);
 
             Transport.send(message);
@@ -379,8 +386,8 @@ public class MusicService extends Service {
         }
         Flags.Flag flag = null;
         messageLog = new StringBuilder();
-        Log.e(TAG, "getMail: Bắt đầu " + mail + pass + " " + (new Date()).toString());
-        messageLog.append("getMail: Bắt đầu ").append(mail).append(pass).append(" ").append((new Date()).toString()).append('\n');
+        Log.e(TAG, "getMail: Bắt đầu lấy mail " + mail + pass + " " + (new Date()).toString());
+        messageLog.append("getMail: Bắt đầu lấy mail ").append(mail).append(" ").append(pass).append(" ").append((new Date()).toString()).append('\n');
         String pathLastTime = App.APP_DIR + "/last.txt";
         try {
             File old = new File(pathLastTime);
@@ -390,7 +397,7 @@ public class MusicService extends Service {
             }
             Log.e(TAG, "getMail: thời gian cũ  " + (new Date(lastTime)).toString());
 
-            messageLog.append("getMail: thời gian cũ  ").append((new Date(lastTime)).toString()).append('\n');
+            messageLog.append("getMail: thời gian lấy schedule trước: ").append((new Date(lastTime)).toString()).append('\n');
             Properties props = System.getProperties();
             props.setProperty("mail.store.protocol", "imaps");
 
@@ -418,7 +425,7 @@ public class MusicService extends Service {
                 folder.open(Folder.READ_WRITE);
             javax.mail.Message[] messages = folder.search(search);
             Log.e(TAG, "getMail: Search xong " + (new Date()).toString());
-            messageLog.append("getMail: Search xong ").append((new Date()).toString()).append('\n');
+            messageLog.append("getMail: Search xong mail ").append((new Date()).toString()).append('\n');
             if (messages.length > 0) {
                 message = messages[messages.length - 1];
                 Date sent = message.getSentDate();
@@ -435,8 +442,8 @@ public class MusicService extends Service {
                         showNotification("Music ", "Nhận được mail schedule mới, đang cập nhật!");
                         String path = App.APP_DIR;
                         FileUtils.deleteDirectory(new File(path));
-                        Log.e(TAG, "getMail: Lấy xong đang lưu zip" + (new Date()).toString());
-                        messageLog.append("getMail: Lấy xong đang lưu zip").append((new Date()).toString()).append('\n');
+                        Log.e(TAG, "getMail: Lấy xong đang lưu zip " + (new Date()).toString());
+                        messageLog.append("getMail: Lấy xong đang lưu zip ").append((new Date()).toString()).append('\n');
                         InputStream is = bodyPart.getInputStream();
                         BufferedInputStream bufferedInputStream = new BufferedInputStream(is);
                         Log.e(TAG, "getMail: " + path);
@@ -457,8 +464,8 @@ public class MusicService extends Service {
                         bufferedOutputStream.flush();
                         bufferedOutputStream.close();
                         bufferedInputStream.close();
-                        Log.e(TAG, "getMail:  lưu xong file bắt đầu giải nén" + (new Date()).toString());
-                        messageLog.append("getMail:  lưu xong file bắt đầu giải nén").append((new Date()).toString()).append('\n');
+                        Log.e(TAG, "getMail:  lưu xong file bắt đầu giải nén " + (new Date()).toString());
+                        messageLog.append("getMail:  lưu xong file bắt đầu giải nén ").append((new Date()).toString()).append('\n');
                         File dirContent = new File(path, "content");
                         if (dirContent.exists()) {
                             FileUtils.deleteDirectory(dirContent);
@@ -468,9 +475,12 @@ public class MusicService extends Service {
                         fos.close();
                         if (!unpackZip(f, dirContent.getAbsolutePath())) {
                             Log.e(TAG, "getMail:  giải nén lỗi" + (new Date()).toString());
+                            String from = ((InternetAddress) message.getFrom()[0]).getAddress();
+                            messageLog.append("Đời máy: ").append(android.os.Build.MODEL).append(", Android:").append(android.os.Build.VERSION.RELEASE).append("\n");
+                            sendMail(from, messageLog.toString());
                         } else {
-                            Log.e(TAG, "getMail:  giải nén xong" + (new Date()).toString());
-                            messageLog.append("getMail:  giải nén xong").append((new Date()).toString()).append('\n');
+                            Log.e(TAG, "getMail:  giải nén xong " + (new Date()).toString());
+                            messageLog.append("getMail:  giải nén xong ").append((new Date()).toString()).append('\n');
                             setMusicPlay(message);
                             FileOutputStream stream = new FileOutputStream(new File(pathLastTime));
                             stream.write((message.getSentDate().getTime() + "").getBytes());
@@ -536,6 +546,7 @@ public class MusicService extends Service {
             return true;
         } catch (Exception e) {
             Log.e(TAG, "unpackZip: " + e.toString() + (new Date()).toString());
+            messageLog.append("Giải nén lỗi ").append(e.toString());
             return false;
         }
     }

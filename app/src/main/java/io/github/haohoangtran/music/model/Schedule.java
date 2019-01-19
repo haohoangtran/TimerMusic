@@ -18,13 +18,8 @@ public class Schedule {
     @NonNull
     @Override
     public String toString() {
-        return "Schedule{" +
-                "start='" + start + '\'' +
-                ", end='" + end + '\'' +
-                ", audio='" + audio + '\'' +
-                ", path='" + path + '\'' +
-                ", file=" + file +
-                '}';
+        return "Schedule: " + "start='" + start + '\'' + ", end='" + end + '\'' + ", audio='" + audio + '\'' + ", path='" + path + '\'' +
+                ", file=" + file + '\n';
     }
 
     public File getFile() {

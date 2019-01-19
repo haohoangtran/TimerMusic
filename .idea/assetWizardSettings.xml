@@ -28,9 +28,10 @@
                         </option>
                         <option name="values">
                           <map>
+                            <entry key="assetSourceType" value="FILE" />
                             <entry key="color" value="ff9e24" />
-                            <entry key="outputName" value="ic_skip_next_black_24dp" />
-                            <entry key="sourceFile" value="C:\Users\tranh" />
+                            <entry key="outputName" value="ic_launcher" />
+                            <entry key="sourceFile" value="C:\Users\tranh\Desktop\launcher.svg" />
                           </map>
                         </option>
                       </PersistentState>

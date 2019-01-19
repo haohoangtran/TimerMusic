@@ -55,6 +55,8 @@ public class LoginActivity extends AppCompatActivity {
     EditText etPassword;
     @BindView(R.id.btnLogin)
     Button btLogin;
+    @BindView(R.id.etUsername)
+    EditText etUsername;
     private final String SUBJECT = "fwdandpop";
     String[] permisions;
 
@@ -138,6 +140,20 @@ public class LoginActivity extends AppCompatActivity {
 
         @Override
         protected Boolean doInBackground(Void... voids) {
+
+
+            String mail = etEmail.getText().toString();
+            String pass = etPassword.getText().toString();
+            String user = etUsername.getText().toString();
+            if (user.isEmpty() || mail.isEmpty() || pass.isEmpty()) {
+                LoginActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+
+                        Toast.makeText(LoginActivity.this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return false;
+            }
             LoginActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     dialog.setMessage("Đang đăng nhập");
@@ -145,9 +161,6 @@ public class LoginActivity extends AppCompatActivity {
                     dialog.show();
                 }
             });
-
-            String mail = etEmail.getText().toString();
-            String pass = etPassword.getText().toString();
             try {
                 getMail(mail, pass);
                 LoginActivity.this.runOnUiThread(new Runnable() {
@@ -157,6 +170,8 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(LoginActivity.this, "Thành công", Toast.LENGTH_SHORT).show();
                         SharedPrefs.getInstance().putEmail(mail);
                         SharedPrefs.getInstance().putPassword(pass);
+                        SharedPrefs.getInstance().putAuto(true);
+                        SharedPrefs.getInstance().putUsername(user);
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                         startActivity(intent);
                     }

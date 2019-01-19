@@ -32,6 +32,10 @@ public class Database {
         return scheduleDetails;
     }
 
+    public void clearScheduleDetail() {
+        scheduleDetails.clear();
+    }
+
 
     public void addToDetail(String text) {
         if (scheduleDetails.size() > 10) {
