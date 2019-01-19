@@ -16,7 +16,6 @@
             android:id="@+id/etUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Hao123"
             android:hint="Nhập username"
             android:inputType="text" />
 
@@ -27,7 +26,6 @@
 
         <EditText
             android:id="@+id/etEmail"
-            android:text="lachongtest123@gmail.com"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nhập địa chỉ Email"
@@ -43,7 +41,6 @@
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="lachong@1305"
             android:hint="Nhập mật khẩu"
             android:inputType="textPassword" />
 
