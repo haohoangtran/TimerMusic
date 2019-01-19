@@ -18,8 +18,7 @@ public class Schedule {
     @NonNull
     @Override
     public String toString() {
-        return "Schedule: " + "start='" + start + '\'' + ", end='" + end + '\'' + ", audio='" + audio + '\'' + ", path='" + path + '\'' +
-                ", file=" + file + '\n';
+        return "\nSchedule: " + "start='" + start + '\'' + ", end='" + end + '\'' + ", audio='" + audio + '\n';
     }
 
     public File getFile() {
