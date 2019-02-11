@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.github.haohoangtran.music">
+    package="com.birdhouse.thanhhoang.kimyen">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -10,40 +10,28 @@
     <application
         android:name=".App"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher_kimyen"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher_kimyen_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".MainActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".LoginActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+        <activity android:name=".MainActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+        <activity android:name=".LoginActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <service
             android:name=".MusicService"
-            android:enabled="true"></service>
-        <service
-            android:name=".PlayingService"
-            android:enabled="true" />
-
+            android:enabled="true"/>
         <receiver android:name=".RestartServiceReceiver">
             <intent-filter>
-                <action android:name="YouWillNeverKillMe" />
+                <action android:name="YouWillNeverKillMe"/>
             </intent-filter>
         </receiver>
-        <receiver android:name=".MyNotification$MediaButtonNoti" />
-
-        <activity android:name=".DetailActivity"></activity>
     </application>
 
 </manifest>
