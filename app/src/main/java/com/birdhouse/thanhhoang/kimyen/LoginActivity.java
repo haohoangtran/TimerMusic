@@ -20,6 +20,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.birdhouse.thanhhoang.kimyen.drive.DriveServiceHelper;
+import com.birdhouse.thanhhoang.kimyen.drive.GMimeType;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -27,17 +28,16 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveClient;
-import com.google.android.gms.drive.DriveId;
 import com.google.android.gms.drive.DriveResourceClient;
-import com.google.android.gms.drive.OpenFileActivityOptions;
 import com.google.android.gms.tasks.Task;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.File;
 import com.sun.mail.imap.IMAPFolder;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -66,10 +66,6 @@ public class LoginActivity extends AppCompatActivity {
      */
     private DriveResourceClient mDriveResourceClient;
     ProgressDialog dialog;
-    @BindView(R.id.etEmail)
-    EditText etEmail;
-    @BindView(R.id.etPassword)
-    EditText etPassword;
     @BindView(R.id.btnLogin)
     Button btLogin;
     @BindView(R.id.etUsername)
@@ -84,6 +80,7 @@ public class LoginActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         permissions = new String[]{
                 Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.GET_ACCOUNTS,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE};
     }
 
@@ -96,15 +93,15 @@ public class LoginActivity extends AppCompatActivity {
             finish();
         }
         dialog = new ProgressDialog(LoginActivity.this);
-        requirePermision();
+
+        signInGoogleDrive();
+
         btLogin.setOnClickListener(new View.OnClickListener() {
-            @SuppressLint("StaticFieldLeak")
             @Override
             public void onClick(View v) {
-                new AttemptLogin().execute();
+                signInApp();
             }
         });
-        signIn();
     }
 
     @Override
@@ -130,6 +127,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 break;
         }
+        requirePermision();
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -140,7 +138,7 @@ public class LoginActivity extends AppCompatActivity {
                     1);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR)
                 != PackageManager.PERMISSION_GRANTED) {
-            File file = new File(App.APP_DIR);
+            java.io.File file = new java.io.File(App.APP_DIR);
             if (!file.exists()) {
                 file.mkdir();
             }
@@ -168,7 +166,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    protected void signIn() {
+    protected void signInGoogleDrive() {
         Set<Scope> requiredScopes = new HashSet<>(2);
         requiredScopes.add(Drive.SCOPE_FILE);
         requiredScopes.add(Drive.SCOPE_APPFOLDER);
@@ -202,96 +200,41 @@ public class LoginActivity extends AppCompatActivity {
         return (res == PackageManager.PERMISSION_GRANTED);
     }
 
-    private void test() {
+    private void signInApp() {
         GoogleSignInOptions gso =
                 new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                         .requestProfile()
                         .build();
-        gso.toJson();
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(LoginActivity.this);
-
-        GoogleAccountCredential credential =
-                GoogleAccountCredential.usingOAuth2(
-                        LoginActivity.this, Collections.singleton(DriveScopes.DRIVE_FILE));
-//        credential.setSelectedAccount(account.getAccount());
-//        com.google.api.services.drive.Drive googleDriveService =
-//                new com.google.api.services.drive.Drive.Builder(
-//                        AndroidHttp.newCompatibleTransport(),
-//                        new GsonFactory(),
-//                        credential)
-//                        .setApplicationName("AppName")
-//                        .build();
-//        DriveServiceHelper.init(googleDriveService);
-//        mDriveServiceHelper = DriveServiceHelper.getInstance();
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private class AttemptLogin extends AsyncTask<Void, Void, Boolean> {
-        private String TAG = AttemptLogin.class.getSimpleName();
-        String mail = etEmail.getText().toString();
-        String pass = etPassword.getText().toString();
-        String user = etUsername.getText().toString();
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            if (user.isEmpty() || mail.isEmpty() || pass.isEmpty()) {
-                LoginActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        Toast.makeText(LoginActivity.this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                return false;
-            }
-            LoginActivity.this.runOnUiThread(new Runnable() {
-                public void run() {
-                    dialog.setMessage("Đang đăng nhập");
-                    dialog.setCancelable(false);
-                    dialog.show();
-                }
-            });
+        if (account != null) {
+            GoogleAccountCredential credential =
+                    GoogleAccountCredential.usingOAuth2(
+                            LoginActivity.this, Collections.singleton(DriveScopes.DRIVE_FILE));
+            credential.setSelectedAccount(account.getAccount());
+            com.google.api.services.drive.Drive googleDriveService =
+                    new com.google.api.services.drive.Drive.Builder(
+                            AndroidHttp.newCompatibleTransport(),
+                            new GsonFactory(),
+                            credential)
+                            .setApplicationName("KimYen")
+                            .build();
+            DriveServiceHelper.init(googleDriveService);
+            mDriveServiceHelper = DriveServiceHelper.getInstance();
+            File fileMetadata = new File();
+            fileMetadata.setName("HaoHoangTranHiHi");
+            fileMetadata.setMimeType(GMimeType.TYPE_GOOGLE_DRIVE_FOLDER);
+            File file = null;
             try {
-                getMail(mail, pass);
-                LoginActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        dialog.dismiss();
-//                        Toast.makeText(LoginActivity.this, "Thành công", Toast.LENGTH_SHORT).show();
-                        SharedPrefs.getInstance().putEmail(mail);
-                        SharedPrefs.getInstance().putPassword(pass);
-                        SharedPrefs.getInstance().putAuto(true);
-                        SharedPrefs.getInstance().putUsername(user);
-                        SharedPrefs.getInstance().putLastTime((new Date()).getTime());
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        startActivity(intent);
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "getMail: lỗi" + e.toString());
-                LoginActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        dialog.dismiss();
-                        Toast.makeText(LoginActivity.this, "Lỗi Đăng Nhập", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                file = mDriveServiceHelper.getmDriveService().files().create(fileMetadata)
+                        .setFields("id")
+                        .execute();
+                Log.e("ccqq", "Folder ID: " + file.getId() + " " + file.getName());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            return true;
-        }
 
-        private void getMail(String mail, String pass) throws Exception {
-            IMAPFolder folder = null;
-            Store store = null;
-            String subject = null;
-            Flags.Flag flag = null;
-            Log.e(TAG, "getMail: Bắt đầu " + (new Date()).toString());
-            Properties props = System.getProperties();
-            props.setProperty("mail.store.protocol", "imaps");
-            Session session = Session.getDefaultInstance(props, null);
-            store = session.getStore("imaps");
-            store.connect("imap.googlemail.com", mail, pass);
-            folder = (IMAPFolder) (store.getFolder("Inbox"));
-            if (!folder.isOpen())
-                folder.open(Folder.READ_WRITE);
-            Message[] messages = folder.getMessages();
-            Log.e(TAG, "getMail: Search xong " + (new Date()).toString());
+        } else {
+            Toast.makeText(this, "Vui lòng cho phép truy cập Drive của bạn", Toast.LENGTH_SHORT).show();
         }
     }
 }

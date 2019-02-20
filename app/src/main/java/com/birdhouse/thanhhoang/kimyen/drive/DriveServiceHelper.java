@@ -36,6 +36,10 @@ public class DriveServiceHelper {
         mDriveService = driveService;
     }
 
+    public Drive getmDriveService() {
+        return mDriveService;
+    }
+
     public static DriveServiceHelper getInstance() {
         if (instance == null) {
             throw new Error("Call init truoc");
