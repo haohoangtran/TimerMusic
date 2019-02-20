@@ -1,16 +1,20 @@
 package com.birdhouse.thanhhoang.kimyen.drive;
+
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
-import android.support.v4.util.Pair;
+
+import androidx.core.util.Pair;
+
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,12 +22,25 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 public class DriveServiceHelper {
+    private static DriveServiceHelper instance = null;
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
     private final Drive mDriveService;
 
-    public DriveServiceHelper(Drive driveService) {
+    public static void init(Drive driveService) {
+        instance = new DriveServiceHelper(driveService);
+    }
+
+    private DriveServiceHelper(Drive driveService) {
         mDriveService = driveService;
+    }
+
+    public static DriveServiceHelper getInstance() {
+        if (instance == null) {
+            throw new Error("Call init truoc");
+        }
+        return instance;
     }
 
     /**
@@ -111,6 +128,28 @@ public class DriveServiceHelper {
         intent.setType("text/plain");
 
         return intent;
+    }
+
+    public Task<GoogleDriveFileHolder> searchFile(String fileName, String mimeType) {
+        return Tasks.call(mExecutor, () -> {
+
+            FileList result = mDriveService.files().list()
+                    .setQ("name = '" + fileName + "' and mimeType ='" + mimeType + "'")
+                    .setSpaces("drive")
+                    .setFields("files(id, name,size,createdTime,modifiedTime,starred)")
+                    .execute();
+            GoogleDriveFileHolder googleDriveFileHolder = new GoogleDriveFileHolder();
+            if (result.getFiles().size() > 0) {
+
+                googleDriveFileHolder.setId(result.getFiles().get(0).getId());
+                googleDriveFileHolder.setName(result.getFiles().get(0).getName());
+                googleDriveFileHolder.setModifiedTime(result.getFiles().get(0).getModifiedTime());
+                googleDriveFileHolder.setSize(result.getFiles().get(0).getSize());
+            }
+
+
+            return googleDriveFileHolder;
+        });
     }
 
     /**
