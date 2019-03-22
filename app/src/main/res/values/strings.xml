@@ -1,10 +1,9 @@
 <resources>
-    <string name="app_name">Kim Yến</string>
-    <string name="main_email">nhayenkim001@gmail.com</string>
-    <string name="main_username">Miệng Lỗ</string>
-    <string name="main_toggle_auto">Bật/Tắt Hệ Thống</string>
-    <string name="main_filename_title">Tên File: </string>
-    <string name="main_filename_empty">Trống</string>
-    <string name="main_filename">meningkakan populasi3h.wma</string>
-    <string name="main_schedule_text">12:00-14:30</string>
+    <string name="app_name">KimYenNew</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
