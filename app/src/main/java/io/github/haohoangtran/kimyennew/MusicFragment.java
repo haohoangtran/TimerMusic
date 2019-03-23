@@ -156,13 +156,15 @@ public class MusicFragment extends Fragment {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     //huy cai cu chon cai moi
-                    DbContext.getInstance().changePlayFile(music);
-                    EventBus.getDefault().post(new DataChangeEvent());
-                    if (!music.isPlaying() && isChecked) {
+                    if (!music.isPlaying()) {
                         //neu dang khong chay ma dc chon
+                        DbContext.getInstance().changePlayFile(music);
                         SharePref.getInstance().savePathRunning(music.getPath());
                         MusicService.initSchedule(getContext());
                     }
+
+                    EventBus.getDefault().post(new DataChangeEvent());
+
                 }
             });
         }

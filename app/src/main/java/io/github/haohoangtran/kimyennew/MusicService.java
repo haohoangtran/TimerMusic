@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -34,8 +35,7 @@ public class MusicService extends Service {
     private static final String SUBJECT = "schedule";
     private static String TAG = MusicService.class.toString();
     public static MediaPlayer mPlayer;
-    private static ScheduledExecutorService scheduleTaskExecutor;
-
+    private static Handler handler;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -67,7 +67,6 @@ public class MusicService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
         initSchedule(getApplicationContext());
         return START_STICKY;
     }
@@ -107,8 +106,11 @@ public class MusicService extends Service {
     }
 
     public static void initSchedule(Context context) {
-        scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-
+        if (handler == null) {
+            handler = new Handler();
+        }
+        handler.removeCallbacksAndMessages(null);
+        // bo tat ca cai event cu
         if (SharePref.getInstance().isOn()) {
             Calendar now = Calendar.getInstance();
             int hour = now.get(Calendar.HOUR_OF_DAY);
@@ -137,7 +139,7 @@ public class MusicService extends Service {
                 stopPlayingFile();
             }
         }
-        scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+        handler.postDelayed(new Runnable() {
             public void run() {
                 int size = DbContext.getInstance().getSchedules().size();
                 if (position + 1 >= size) {
@@ -146,7 +148,7 @@ public class MusicService extends Service {
                     setSchedule(position + 1, DbContext.TIME_INTERVAL, context);
                 }
             }
-        }, timeNextStep != DbContext.TIME_INTERVAL ? timeNextStep : 0, timeNextStep, TimeUnit.MINUTES);
+        }, timeNextStep * 60 * 1000);
     }
 
     public static void resume() {
