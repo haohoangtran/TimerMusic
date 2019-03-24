@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +42,7 @@ public class MusicFragment extends Fragment {
     RecyclerView rvMusic;
     @BindView(R.id.sw_onoff)
     Switch swOnOff;
+    private static String TAG = MusicFragment.class.toString();
 
     public MusicFragment() {
     }
@@ -167,9 +169,10 @@ public class MusicFragment extends Fragment {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     //huy cai cu chon cai moi
 //                    if (!music.isPlaying()) {
-                        //neu dang khong chay ma dc chon
-                        DbContext.getInstance().changePlayFile(music);
-                        SharePref.getInstance().savePathRunning(music.getPath());
+                    //neu dang khong chay ma dc chon
+                    DbContext.getInstance().changePlayFile(music);
+                    Log.e(TAG, "onCheckedChanged: " + music);
+                    SharePref.getInstance().savePathRunning(music.getPath());
                     MusicService.initSchedule(getContext(), true);
 //                    }
 

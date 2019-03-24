@@ -109,6 +109,7 @@ public class MusicService extends Service {
         if (handler == null) {
             handler = new Handler();
         }
+        Log.e(TAG, "initSchedule: " + DbContext.getInstance().getCurrentMusic());
         handler.removeCallbacksAndMessages(null);
         // bo tat ca cai event cu
         if (SharePref.getInstance().isOn()) {
