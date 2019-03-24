@@ -75,14 +75,17 @@ public class DbContext {
     }
 
     public void changePlayFile(Music music) {
+
         for (Music music1 : musics) {
             music1.setPlaying(false);
         }
         currentMusic = music;
+        SharePref.getInstance().savePathRunning(music.getPath());
         music.setPlaying(true);
     }
 
     private void getListFiles(File parentDir) {
+        String pathCurrentSelect = SharePref.getInstance().getPathMusic();
         musics.clear();
         Queue<File> files = new LinkedList<>();
         files.addAll(Arrays.asList(parentDir.listFiles()));
@@ -91,7 +94,12 @@ public class DbContext {
             if (file.isDirectory()) {
                 files.addAll(Arrays.asList(file.listFiles()));
             } else if (isMusicFile(file.getName())) {
-                musics.add(new Music(file));
+                boolean isPlaying = file.getAbsolutePath().equals(pathCurrentSelect);
+                Music music = new Music(file, isPlaying);
+                musics.add(music);
+                if (isPlaying) {
+                    currentMusic = music;
+                }
             }
         }
     }
@@ -103,6 +111,7 @@ public class DbContext {
         }
         EventBus.getDefault().post(new DataChangeEvent());
     }
+
 
     public boolean isCheckAllSchedule() {
         for (Schedule schedule : schedules) {

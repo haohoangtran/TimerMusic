@@ -56,7 +56,7 @@ public class MusicService extends Service {
                 notificationIntent, 0);
 
         Notification notification = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher_kimyen)
+                .setSmallIcon(R.drawable.appicon)
                 .setContentTitle("My Awesome App")
                 .setContentText("Doing some work...")
                 .setContentIntent(pendingIntent).build();
