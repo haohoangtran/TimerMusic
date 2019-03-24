@@ -56,7 +56,7 @@ public class MusicService extends Service {
                 notificationIntent, 0);
 
         Notification notification = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_launcher_kimyen)
                 .setContentTitle("My Awesome App")
                 .setContentText("Doing some work...")
                 .setContentIntent(pendingIntent).build();
@@ -67,7 +67,7 @@ public class MusicService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        initSchedule(getApplicationContext());
+        initSchedule(getApplicationContext(), false);
         return START_STICKY;
     }
 
@@ -105,7 +105,7 @@ public class MusicService extends Service {
         }
     }
 
-    public static void initSchedule(Context context) {
+    public static void initSchedule(Context context, boolean reset_audio) {
         if (handler == null) {
             handler = new Handler();
         }
@@ -119,33 +119,37 @@ public class MusicService extends Service {
             int positionSchedule = currentMinuteOfDay / DbContext.TIME_INTERVAL;
             int timetoNextStep = (positionSchedule + 1) * DbContext.TIME_INTERVAL - currentMinuteOfDay;
             //vào sẽ tính thời gian lần kế tiếp chạy, và set lần này
-            setSchedule(positionSchedule, timetoNextStep, context);
+            setSchedule(positionSchedule, timetoNextStep, context, reset_audio);
         } else {
-            Toast.makeText(context, "Khong on switch", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Thiết Bị Đang Tắt", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public static void setSchedule(int position, int timeNextStep, Context context) {
+    public static void setSchedule(int position, int timeNextStep, Context context, boolean reset_audio) {
         Schedule schedule = DbContext.getInstance().getSchedules().get(position);
         Music music = DbContext.getInstance().getCurrentMusic();
         if (schedule.isSelect()) {
             if (music != null) {
-                playingFile(music.getFile());
+                resume();
+                if (reset_audio) {
+                    stopPlayingFile();
+                    playingFile(music.getFile());
+                }
             } else {
-                Toast.makeText(context, "Vui long chon file de chay", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Vui lòng chọn file", Toast.LENGTH_SHORT).show();
             }
         } else {
             if (music != null) {
-                stopPlayingFile();
+                pause();
             }
         }
         handler.postDelayed(new Runnable() {
             public void run() {
                 int size = DbContext.getInstance().getSchedules().size();
                 if (position + 1 >= size) {
-                    setSchedule(0, DbContext.TIME_INTERVAL, context);
+                    setSchedule(0, DbContext.TIME_INTERVAL, context, reset_audio);
                 } else {
-                    setSchedule(position + 1, DbContext.TIME_INTERVAL, context);
+                    setSchedule(position + 1, DbContext.TIME_INTERVAL, context, reset_audio);
                 }
             }
         }, timeNextStep * 60 * 1000);

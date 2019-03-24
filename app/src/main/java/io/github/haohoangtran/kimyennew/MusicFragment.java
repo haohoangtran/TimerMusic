@@ -2,6 +2,7 @@ package io.github.haohoangtran.kimyennew;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -59,12 +60,14 @@ public class MusicFragment extends Fragment {
         swOnOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                boolean prev_state = SharePref.getInstance().isOn();
                 SharePref.getInstance().saveOnOff(isChecked);
                 if (isChecked) {
-
-                    MusicService.initSchedule(getContext());
+                    if (!prev_state) {
+                        MusicService.initSchedule(getContext(), true);
+                    }
                 } else {
-                    MusicService.stopPlayingFile();
+                    MusicService.pause();
                 }
             }
         });
@@ -130,6 +133,11 @@ public class MusicFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull MusicViewHolder musicViewHolder, int i) {
             musicViewHolder.bind(DbContext.getInstance().getMusics().get(i));
+            if (i % 2 == 1) {
+                musicViewHolder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            } else {
+                musicViewHolder.itemView.setBackgroundColor(Color.parseColor("#40008577"));
+            }
         }
 
         @Override
@@ -145,23 +153,25 @@ public class MusicFragment extends Fragment {
         public MusicViewHolder(@NonNull View itemView) {
             super(itemView);
             tv = itemView.findViewById(R.id.tv_name);
+            tv.setSelected(true);
             rd = itemView.findViewById(R.id.rd_isPlaying);
 
         }
 
         public void bind(Music music) {
-            tv.setText(music.getName());
+            String filename = music.getName().trim();
+            tv.setText(filename.substring(0, filename.lastIndexOf(".")));
             rd.setChecked(music.isPlaying());
             rd.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     //huy cai cu chon cai moi
-                    if (!music.isPlaying()) {
+//                    if (!music.isPlaying()) {
                         //neu dang khong chay ma dc chon
                         DbContext.getInstance().changePlayFile(music);
                         SharePref.getInstance().savePathRunning(music.getPath());
-                        MusicService.initSchedule(getContext());
-                    }
+                    MusicService.initSchedule(getContext(), true);
+//                    }
 
                     EventBus.getDefault().post(new DataChangeEvent());
 

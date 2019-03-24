@@ -1,6 +1,7 @@
 package io.github.haohoangtran.kimyennew;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,13 +30,14 @@ import butterknife.ButterKnife;
 
 
 public class ScheduleFragment extends Fragment {
+    String TAG = this.getClass().getSimpleName();
     private OnFragmentInteractionListener mListener;
     @BindView(R.id.rv_schedule)
     RecyclerView rvSchedule;
     ScheduleAdapter adapter;
     @BindView(R.id.cb_checkall)
     CheckBox cbCheckAll;
-
+    SparseBooleanArray itemStateArray = new SparseBooleanArray();
     public ScheduleFragment() {
         // Required empty public constructor
     }
@@ -43,7 +46,6 @@ public class ScheduleFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
     }
 
     @Override
@@ -59,7 +61,7 @@ public class ScheduleFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 DbContext.getInstance().handleAllScheduleState(isChecked);
-                MusicService.initSchedule(getContext());
+                MusicService.initSchedule(getContext(), false);
             }
         });
         return view;
@@ -86,7 +88,6 @@ public class ScheduleFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
         EventBus.getDefault().register(this);
         cbCheckAll.setChecked(DbContext.getInstance().isCheckAllSchedule());
     }
@@ -118,6 +119,7 @@ public class ScheduleFragment extends Fragment {
 
 
     private class ScheduleAdapter extends RecyclerView.Adapter<ScheduleViewHolder> {
+
         @NonNull
         @Override
         public ScheduleViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
@@ -128,8 +130,13 @@ public class ScheduleFragment extends Fragment {
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ScheduleViewHolder musicViewHolder, int i) {
-            musicViewHolder.bind(DbContext.getInstance().getSchedules().get(i));
+        public void onBindViewHolder(@NonNull ScheduleViewHolder scheduleViewHolder, int i) {
+            scheduleViewHolder.bind(DbContext.getInstance().getSchedules().get(i));
+            if (i % 2 == 1) {
+                scheduleViewHolder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            } else {
+                scheduleViewHolder.itemView.setBackgroundColor(Color.parseColor("#40008577"));
+            }
         }
 
         @Override
@@ -146,25 +153,27 @@ public class ScheduleFragment extends Fragment {
             super(itemView);
             tv = itemView.findViewById(R.id.tv_name);
             cb = itemView.findViewById(R.id.cb_isSelect);
+            this.setIsRecyclable(false);
         }
 
         public void bind(Schedule schedule) {
+            // use the sparse boolean array to check
             tv.setText(schedule.getTime());
             cb.setChecked(schedule.isSelect());
             cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     schedule.setSelect(isChecked);
-                    Log.e("", "onCheckedChanged: " + schedule);
+                    Log.e(TAG, "onCheckedChanged: " + schedule);
                     DbContext.getInstance().insertOrUpdateSchedule(schedule);
                     Calendar now = Calendar.getInstance();
                     int hour = now.get(Calendar.HOUR_OF_DAY);
                     int minute = now.get(Calendar.MINUTE);
                     int currentMinuteOfDay = ((hour * 60) + minute);
                     if (Math.abs(schedule.getMinute() - currentMinuteOfDay) < DbContext.TIME_INTERVAL) {
-                        MusicService.initSchedule(getContext());
+                        MusicService.initSchedule(getContext(), false);
                     }
-                    cbCheckAll.setChecked(DbContext.getInstance().isCheckAllSchedule());
+//                    cbCheckAll.setChecked(DbContext.getInstance().isCheckAllSchedule());
                 }
             });
         }

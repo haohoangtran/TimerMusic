@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">KimYenNew</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="app_name">Kim Yến</string>
+    <string name="title_home">Nhạc</string>
+    <string name="title_dashboard">Hẹn Giờ</string>
+    <string name="title_notifications">Thông Báo</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
