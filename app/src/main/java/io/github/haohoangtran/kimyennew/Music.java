@@ -57,5 +57,8 @@ public class Music {
         this.path = this.file.getAbsolutePath();
         this.name = file.getName();
         this.isPlaying = isPlaying;
+        if (this.isPlaying) {
+            DbContext.getInstance().setCurrentMusic(this);
+        }
     }
 }
