@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -36,7 +37,7 @@ public class ScheduleFragment extends Fragment {
     RecyclerView rvSchedule;
     ScheduleAdapter adapter;
     @BindView(R.id.cb_checkall)
-    CheckBox cbCheckAll;
+    Switch cbCheckAll;
     SparseBooleanArray itemStateArray = new SparseBooleanArray();
     public ScheduleFragment() {
         // Required empty public constructor
@@ -98,14 +99,18 @@ public class ScheduleFragment extends Fragment {
         postAndNotifyAdapter(handler, rvSchedule, adapter);
     }
 
-    private void postAndNotifyAdapter(final Handler handler, final RecyclerView recyclerView, final RecyclerView.Adapter adapter) {
+    private void postAndNotifyAdapter(Handler handler, final RecyclerView recyclerView, final RecyclerView.Adapter adapter) {
+        if (handler == null) {
+            handler = new Handler();
+        }
+        Handler finalHandler = handler;
         handler.post(new Runnable() {
             @Override
             public void run() {
                 if (!recyclerView.isComputingLayout()) {
                     adapter.notifyDataSetChanged();
                 } else {
-                    postAndNotifyAdapter(handler, recyclerView, adapter);
+                    postAndNotifyAdapter(finalHandler, recyclerView, adapter);
                 }
             }
         });
@@ -146,8 +151,8 @@ public class ScheduleFragment extends Fragment {
     }
 
     private class ScheduleViewHolder extends RecyclerView.ViewHolder {
-        TextView tv;
-        CheckBox cb;
+        public TextView tv;
+        public Switch cb;
 
         public ScheduleViewHolder(@NonNull View itemView, Schedule schedule) {
             super(itemView);
@@ -159,6 +164,7 @@ public class ScheduleFragment extends Fragment {
         public void bind(Schedule schedule) {
             // use the sparse boolean array to check
             tv.setText(schedule.getTime());
+            cb.setOnCheckedChangeListener(null);
             cb.setChecked(schedule.isSelect());
             cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override

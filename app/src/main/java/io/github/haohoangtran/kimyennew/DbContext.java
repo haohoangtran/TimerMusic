@@ -75,13 +75,12 @@ public class DbContext {
     }
 
     public void changePlayFile(Music music) {
-
         for (Music music1 : musics) {
             music1.setPlaying(false);
         }
         currentMusic = music;
-        SharePref.getInstance().savePathRunning(music.getPath());
         music.setPlaying(true);
+        SharePref.getInstance().savePathRunning(music.getPath());
     }
 
     private void getListFiles(File parentDir) {

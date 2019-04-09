@@ -17,7 +17,7 @@ public class Schedule extends RealmObject {
 
     public void setSelect(boolean select) {
         DbContext.getInstance().getRealm().beginTransaction();
-        isSelect = select;
+        this.isSelect = select;
         DbContext.getInstance().getRealm().commitTransaction();
     }
 

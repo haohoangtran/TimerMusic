@@ -50,7 +50,6 @@ public class MusicFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
     }
 
 
@@ -59,6 +58,7 @@ public class MusicFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_music, container, false);
         ButterKnife.bind(this, view);
+        swOnOff.setOnCheckedChangeListener(null);
         swOnOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -164,6 +164,7 @@ public class MusicFragment extends Fragment {
             String filename = music.getName().trim();
             tv.setText(filename.substring(0, filename.lastIndexOf(".")));
             rd.setChecked(music.isPlaying());
+            rd.setOnCheckedChangeListener(null);
             rd.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

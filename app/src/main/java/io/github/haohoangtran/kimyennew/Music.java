@@ -46,11 +46,10 @@ public class Music {
         this.file = file;
         this.path = this.file.getAbsolutePath();
         this.name = file.getName();
-        this.isPlaying = false;
-//        this.isPlaying = file.getAbsolutePath().equals(SharePref.getInstance().getPathMusic());
-//        if (this.isPlaying) {
-//            DbContext.getInstance().setCurrentMusic(this);
-//        }
+        this.isPlaying = file.getAbsolutePath().equals(SharePref.getInstance().getPathMusic());
+        if (this.isPlaying) {
+            DbContext.getInstance().setCurrentMusic(this);
+        }
     }
 
     public Music(File file, boolean isPlaying) {
