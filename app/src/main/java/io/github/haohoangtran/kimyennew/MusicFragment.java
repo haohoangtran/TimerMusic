@@ -37,7 +37,6 @@ import butterknife.ButterKnife;
  */
 public class MusicFragment extends Fragment {
     MusicAdapter musicAdapter;
-    private OnFragmentInteractionListener mListener;
     @BindView(R.id.rv_music)
     RecyclerView rvMusic;
     @BindView(R.id.sw_onoff)
@@ -79,49 +78,31 @@ public class MusicFragment extends Fragment {
         return view;
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void dataChange(DataChangeEvent event) {
-        Handler handler = new Handler();
-        postAndNotifyAdapter(handler, rvMusic, musicAdapter);
-    }
 
     @Override
     public void onStart() {
         super.onStart();
         swOnOff.setChecked(SharePref.getInstance().isOn());
-        EventBus.getDefault().register(this);
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
 
-        EventBus.getDefault().unregister(this);
-    }
-
-    private void postAndNotifyAdapter(final Handler handler, final RecyclerView recyclerView, final RecyclerView.Adapter adapter) {
+    private void postAndNotifyAdapter(Handler handler, final RecyclerView recyclerView, final RecyclerView.Adapter adapter) {
+        if (handler == null) {
+            handler = new Handler();
+        }
+        Handler finalHandler = handler;
         handler.post(new Runnable() {
             @Override
             public void run() {
                 if (!recyclerView.isComputingLayout()) {
                     adapter.notifyDataSetChanged();
                 } else {
-                    postAndNotifyAdapter(handler, recyclerView, adapter);
+                    postAndNotifyAdapter(finalHandler, recyclerView, adapter);
                 }
             }
         });
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
 
     private class MusicAdapter extends RecyclerView.Adapter<MusicViewHolder> {
         @NonNull
@@ -134,12 +115,7 @@ public class MusicFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(@NonNull MusicViewHolder musicViewHolder, int i) {
-            musicViewHolder.bind(DbContext.getInstance().getMusics().get(i));
-            if (i % 2 == 1) {
-                musicViewHolder.itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
-            } else {
-                musicViewHolder.itemView.setBackgroundColor(Color.parseColor("#40008577"));
-            }
+            musicViewHolder.bind(DbContext.getInstance().getMusics().get(i), i);
         }
 
         @Override
@@ -160,7 +136,12 @@ public class MusicFragment extends Fragment {
 
         }
 
-        public void bind(Music music) {
+        public void bind(Music music, int i) {
+            if (i % 2 == 1) {
+                itemView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            } else {
+                itemView.setBackgroundColor(Color.parseColor("#40008577"));
+            }
             String filename = music.getName().trim();
             tv.setText(filename.substring(0, filename.lastIndexOf(".")));
             rd.setChecked(music.isPlaying());
@@ -168,24 +149,14 @@ public class MusicFragment extends Fragment {
             rd.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    //huy cai cu chon cai moi
-//                    if (!music.isPlaying()) {
-                    //neu dang khong chay ma dc chon
+
                     DbContext.getInstance().changePlayFile(music);
                     Log.e(TAG, "onCheckedChanged: " + music);
                     SharePref.getInstance().savePathRunning(music.getPath());
                     MusicService.initSchedule(getContext(), true);
-//                    }
-
-                    EventBus.getDefault().post(new DataChangeEvent());
-
+                    postAndNotifyAdapter(null, rvMusic, musicAdapter);
                 }
             });
         }
-    }
-
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
     }
 }

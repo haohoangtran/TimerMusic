@@ -18,7 +18,7 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements MusicFragment.OnFragmentInteractionListener, ScheduleFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity {
     private FragmentManager fragmentManager;
     private String TAG = this.getClass().getSimpleName();
 
@@ -106,10 +106,5 @@ public class MainActivity extends AppCompatActivity implements MusicFragment.OnF
             // other 'case' lines to check for other
             // permissions this app might request
         }
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 }
