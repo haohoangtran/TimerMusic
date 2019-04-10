@@ -53,16 +53,17 @@ public class MainActivity extends AppCompatActivity {
         fragmentManager = getSupportFragmentManager();
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.main_container, new MusicFragment());
-        transaction.addToBackStack(null);
-        transaction.commit();
+
         if (!checkPermissionForReadExtertalStorage()) {
             requestPermision();
         } else {
             DbContext.getInstance().readMusicFile();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.main_container, new MusicFragment());
+            transaction.addToBackStack(null);
+            transaction.commit();
             Log.e(TAG, "onCreate: " + DbContext.getInstance().getSchedules());
-            Intent intent = new Intent(this, MusicService.class);
+            Intent intent = new Intent(this, MusicServiceV2.class);
             startService(intent);
         }
     }
@@ -86,13 +87,15 @@ public class MainActivity extends AppCompatActivity {
                                            String permissions[], int[] grantResults) {
         switch (requestCode) {
             case 6969: {
-
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                transaction.replace(R.id.main_container, new MusicFragment());
+                transaction.addToBackStack(null);
+                transaction.commit();
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
                     DbContext.getInstance().readMusicFile();
-                    Intent intent = new Intent(this, MusicService.class);
+                    Intent intent = new Intent(this, MusicServiceV2.class);
                     startService(intent);
                 } else {
 

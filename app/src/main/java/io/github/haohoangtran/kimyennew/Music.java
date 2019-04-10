@@ -3,10 +3,11 @@ package io.github.haohoangtran.kimyennew;
 import java.io.File;
 
 public class Music {
-    private File file;
-    private String name;
-    private String path;
-    private boolean isPlaying;
+    public File file;
+    public String name;
+    public String path;
+    public boolean isPlaying;
+    public int id;
 
     public boolean isPlaying() {
         return isPlaying;
@@ -30,7 +31,8 @@ public class Music {
     public String toString() {
         return "Music{" +
                 "name='" + name + '\'' +
-                ", path='" + path + '\'' +
+                ", isPlaying=" + isPlaying +
+                ", id=" + id +
                 '}';
     }
 
@@ -52,7 +54,8 @@ public class Music {
         }
     }
 
-    public Music(File file, boolean isPlaying) {
+    public Music(File file, boolean isPlaying, int id) {
+        this.id = id;
         this.file = file;
         this.path = this.file.getAbsolutePath();
         this.name = file.getName();
@@ -60,5 +63,9 @@ public class Music {
         if (this.isPlaying) {
             DbContext.getInstance().setCurrentMusic(this);
         }
+    }
+
+    public int getId() {
+        return id;
     }
 }

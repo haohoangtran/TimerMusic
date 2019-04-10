@@ -61,7 +61,7 @@ public class ScheduleFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 DbContext.getInstance().handleAllScheduleState(isChecked);
-                MusicService.initSchedule(getContext(), false);
+                MusicServiceV2.initSchedule(getContext(), false);
             }
         });
         return view;
@@ -159,9 +159,8 @@ public class ScheduleFragment extends Fragment {
                     int minute = now.get(Calendar.MINUTE);
                     int currentMinuteOfDay = ((hour * 60) + minute);
                     if (Math.abs(schedule.getMinute() - currentMinuteOfDay) < DbContext.TIME_INTERVAL) {
-                        MusicService.initSchedule(getContext(), false);
+                        MusicServiceV2.initSchedule(getContext(), false);
                     }
-//                    cbCheckAll.setChecked(DbContext.getInstance().isCheckAllSchedule());
                 }
             });
         }

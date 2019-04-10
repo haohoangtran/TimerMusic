@@ -26,15 +26,6 @@ import org.greenrobot.eventbus.ThreadMode;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link MusicFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link MusicFragment} factory method to
- * create an instance of this fragment.
- */
 public class MusicFragment extends Fragment {
     MusicAdapter musicAdapter;
     @BindView(R.id.rv_music)
@@ -65,10 +56,10 @@ public class MusicFragment extends Fragment {
                 SharePref.getInstance().saveOnOff(isChecked);
                 if (isChecked) {
                     if (!prev_state) {
-                        MusicService.initSchedule(getContext(), true);
+                        MusicServiceV2.initSchedule(getContext(), true);
                     }
                 } else {
-                    MusicService.pause();
+                    MusicServiceV2.pause();
                 }
             }
         });
@@ -103,6 +94,11 @@ public class MusicFragment extends Fragment {
         });
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        postAndNotifyAdapter(null, rvMusic, musicAdapter);
+    }
 
     private class MusicAdapter extends RecyclerView.Adapter<MusicViewHolder> {
         @NonNull
@@ -149,11 +145,9 @@ public class MusicFragment extends Fragment {
             rd.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
                     DbContext.getInstance().changePlayFile(music);
                     Log.e(TAG, "onCheckedChanged: " + music);
-                    SharePref.getInstance().savePathRunning(music.getPath());
-                    MusicService.initSchedule(getContext(), true);
+                    MusicServiceV2.initSchedule(getContext(), true);
                     postAndNotifyAdapter(null, rvMusic, musicAdapter);
                 }
             });

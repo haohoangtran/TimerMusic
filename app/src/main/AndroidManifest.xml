@@ -7,13 +7,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:allowBackup="true"
         android:name=".KimYenApp"
+        android:allowBackup="true"
         android:icon="@mipmap/ic_launcher_kimyen"
-        android:roundIcon="@mipmap/ic_launcher_kimyen"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_kimyen"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name">
@@ -23,18 +24,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service
-            android:process=":my_process"
+            android:name=".MusicServiceV2"
+            android:enabled="true"
             android:icon="@drawable/ic_launcher_background"
             android:label="Kim Yen"
-            android:name=".MusicService"
-            android:enabled="true" />
+            android:process=":my_process" />
 
-        <receiver android:name=".RestartServiceReceiver">
-            <intent-filter>
-                <action android:name="YouWillNeverKillMe" />
-            </intent-filter>
-        </receiver>
     </application>
 
 </manifest>

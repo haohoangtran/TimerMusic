@@ -7,9 +7,9 @@ import io.realm.annotations.PrimaryKey;
 
 public class Schedule extends RealmObject {
 
-    private String time;
+    public String time;
     @PrimaryKey
-    private int minute;
+    public int minute;
 
     public Schedule() {
     }
@@ -21,7 +21,7 @@ public class Schedule extends RealmObject {
         DbContext.getInstance().getRealm().commitTransaction();
     }
 
-    private boolean isSelect;
+    public boolean isSelect;
 
     @Override
     public String toString() {

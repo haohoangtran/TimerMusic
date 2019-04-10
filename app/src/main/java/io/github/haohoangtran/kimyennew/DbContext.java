@@ -37,6 +37,14 @@ public class DbContext {
         setSchedules();
     }
 
+    public Schedule getScheduleInPosition(int pos) {
+        //neu qua range tro ve 0;
+        if (pos < schedules.size()) {
+            return schedules.get(pos);
+        }
+        return schedules.get(0);
+    }
+
     public void insertOrUpdateSchedule(Schedule schedule) {
         realm.beginTransaction();
         realm.insertOrUpdate(schedule);
@@ -78,8 +86,9 @@ public class DbContext {
         for (Music music1 : musics) {
             music1.setPlaying(false);
         }
-        currentMusic = music;
         music.setPlaying(true);
+        this.currentMusic = music;
+        Log.e(TAG, "changePlayFile: " + currentMusic);
         SharePref.getInstance().savePathRunning(music.getPath());
     }
 
@@ -94,7 +103,7 @@ public class DbContext {
                 files.addAll(Arrays.asList(file.listFiles()));
             } else if (isMusicFile(file.getName())) {
                 boolean isPlaying = file.getAbsolutePath().equals(pathCurrentSelect);
-                Music music = new Music(file, isPlaying);
+                Music music = new Music(file, isPlaying, musics.size());
                 musics.add(music);
                 if (isPlaying) {
                     currentMusic = music;
